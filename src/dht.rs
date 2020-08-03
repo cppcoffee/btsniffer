@@ -7,12 +7,10 @@ use async_std::task;
 use log::{debug, info};
 use rand::prelude::*;
 
-use crate::announce::Message;
 use crate::bencode::{self, Value};
-use crate::errors::{Error, Result};
 use crate::node::decode_nodes;
-use crate::rate::Rate;
 use crate::util::{neighbor_id, rand_infohash_key, rand_transation_id};
+use crate::{Error, Message, Rate, Result};
 
 // recv buffer size.
 const BUFFER_SIZE_MAX: usize = 2048;

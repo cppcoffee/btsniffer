@@ -2,8 +2,8 @@ pub mod bencode;
 pub mod node;
 pub mod util;
 
-pub mod announce;
-pub use announce::Message;
+pub mod message;
+pub use message::Message;
 
 pub mod rate;
 pub use rate::Rate;
