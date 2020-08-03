@@ -16,8 +16,6 @@ use crate::util::{neighbor_id, rand_infohash_key, rand_transation_id};
 
 // recv buffer size.
 const BUFFER_SIZE_MAX: usize = 2048;
-// channel capacity size.
-const CHANNEL_CAPACITY: usize = 4000;
 
 // trackers
 const SEEDS: [&'static str; 3] = [
@@ -52,7 +50,7 @@ impl DHT {
         let sock = UdpSocket::bind(self.laddr.as_ref()).await?;
         self.socket = Arc::new(Some(sock));
 
-        let (tx, rx) = channel(CHANNEL_CAPACITY);
+        let (tx, rx) = channel(2);
 
         self.start_message_handler(tx);
         self.start_join();
