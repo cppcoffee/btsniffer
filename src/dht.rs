@@ -242,10 +242,10 @@ impl DHT {
         let a = v
             .dict()?
             .get(b"a".as_ref())
-            .ok_or(Error::DictNotFound("a".to_string()))?;
+            .ok_or(Error::DictNotFound("a".to_string()))?
+            .dict()?;
 
         let hash = a
-            .dict()?
             .get(b"info_hash".as_ref())
             .ok_or(Error::DictNotFound("info_hash".to_string()))?
             .bytes()?;
@@ -254,9 +254,8 @@ impl DHT {
         // present and non-zero, the port argument should be ignored and the source port of the UDP
         // packet should be used as the peer's port instead.
         let mut port = addr.port();
-        if let Some(Value::Integer(0)) = a.dict()?.get(b"implied_port".as_ref()) {
+        if let Some(Value::Integer(0)) = a.get(b"implied_port".as_ref()) {
             port = a
-                .dict()?
                 .get(b"port".as_ref())
                 .ok_or(Error::DictNotFound("port".to_string()))?
                 .integer()? as u16;
