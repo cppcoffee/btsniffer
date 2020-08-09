@@ -4,7 +4,7 @@ use async_std::task;
 use clap::{App, Arg};
 use log::{error, info};
 
-async fn run_server(addr: &str, port: &str, friends: usize) -> Result<()> {
+async fn run_server(addr: &str, port: &str, friends: usize, timeout: u64) -> Result<()> {
     let mut dht = DHT::new(addr, port, friends);
     let rx = dht.run().await?;
 
@@ -12,8 +12,8 @@ async fn run_server(addr: &str, port: &str, friends: usize) -> Result<()> {
         let msg = rx.recv().await?;
 
         // TODO: limit spawn count.
-        task::spawn(async {
-            let mut wire = MetaWire::new(msg);
+        task::spawn(async move {
+            let mut wire = MetaWire::new(msg, timeout);
             match wire.fetch().await {
                 Ok(meta) => {
                     // TODO: save torrent file.
@@ -56,17 +56,26 @@ fn main() {
                 .help("max fiends to make with per second")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("timeout")
+                .short("t")
+                .long("timeout")
+                .help("max time allowed for downloading torrents")
+                .takes_value(true),
+        )
         .get_matches();
 
     let addr = matches.value_of("addr").unwrap_or("0.0.0.0");
     let port = matches.value_of("port").unwrap_or("6881");
     let friends = matches.value_of("friends").unwrap_or("500");
+    let timeout = matches.value_of("timeout").unwrap_or("15");
 
     let friends = friends.parse().unwrap();
+    let timeout = timeout.parse().unwrap();
 
     info!("btsnfifer start.");
     task::block_on(async {
-        if let Err(e) = run_server(addr, port, friends).await {
+        if let Err(e) = run_server(addr, port, friends, timeout).await {
             error!("server failed: {}.", e);
             std::process::exit(1);
         }

@@ -25,15 +25,17 @@ pub struct MetaWire {
     peer_id: Vec<u8>,
     stream: Option<TcpStream>,
     pieces: Vec<Option<Vec<u8>>>,
+    timeout: u64,
 }
 
 impl MetaWire {
-    pub fn new(msg: Message) -> Self {
+    pub fn new(msg: Message, timeout: u64) -> Self {
         Self {
             message: msg,
             peer_id: rand_infohash_key(),
             stream: None,
             pieces: Vec::new(),
+            timeout,
         }
     }
 
@@ -66,7 +68,7 @@ impl MetaWire {
 
     async fn connect(&mut self) -> Result<()> {
         let peer = &self.message.peer;
-        let stream = io::timeout(Duration::from_secs(15), async {
+        let stream = io::timeout(Duration::from_secs(self.timeout), async {
             let res = TcpStream::connect(peer).await?;
             Ok(res)
         })
@@ -228,7 +230,7 @@ impl MetaWire {
 
     async fn socket_read_exact(&self, buf: &mut [u8]) -> Result<()> {
         let mut stream = self.stream.as_ref().ok_or(Error::InvalidTcpStream)?;
-        io::timeout(Duration::from_secs(15), async {
+        io::timeout(Duration::from_secs(self.timeout), async {
             stream.read_exact(buf).await
         })
         .await?;
