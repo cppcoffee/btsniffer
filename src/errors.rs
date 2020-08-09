@@ -1,16 +1,19 @@
 use crate::bencode::Error as BencodeError;
-use async_std::io::Error as IoError;
+use async_std::io::Error as AsyncIoError;
 use async_std::sync::RecvError as AsyncRecvError;
+use std::net::SocketAddr;
 use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]
 pub enum Error {
-    #[error("io error {0}")]
-    Io(#[from] IoError),
+    #[error("async io error {0}")]
+    AsyncIo(#[from] AsyncIoError),
     #[error(transparent)]
     Bencode(#[from] BencodeError),
     #[error(transparent)]
     AsyncRecv(#[from] AsyncRecvError),
+    #[error("connect {0} fail, {1}")]
+    Connect(SocketAddr, AsyncIoError),
     #[error("invalid bencode packet")]
     InvalidPacket,
     #[error("invalid udp socket")]
@@ -39,8 +42,6 @@ pub enum Error {
     IndexNotFound,
     #[error("metadata checksum mismatch")]
     MetadataChecksum,
-    #[error("{0}")]
-    Other(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,5 +1,8 @@
-use async_std::io::prelude::{ReadExt, WriteExt};
+use std::time::Duration;
+
+use async_std::io;
 use async_std::net::TcpStream;
+use async_std::prelude::*;
 
 use crate::bencode::{self, Value};
 use crate::util::rand_infohash_key;
@@ -62,12 +65,14 @@ impl MetaWire {
     }
 
     async fn connect(&mut self) -> Result<()> {
-        self.stream = Some(TcpStream::connect(self.message.peer).await.map_err(|e| {
-            Error::Other(format!(
-                "connect to remote peer {}: {}",
-                self.message.peer, e
-            ))
-        })?);
+        let peer = &self.message.peer;
+        let stream = io::timeout(Duration::from_secs(15), async {
+            let res = TcpStream::connect(peer).await?;
+            Ok(res)
+        })
+        .await
+        .map_err(|e| Error::Connect(*peer, e))?;
+        self.stream = Some(stream);
         Ok(())
     }
 

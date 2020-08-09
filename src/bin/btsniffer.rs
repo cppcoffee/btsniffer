@@ -22,7 +22,7 @@ async fn run_server(addr: &str, port: &str, friends: usize) -> Result<()> {
                 }
                 Err(e) => {
                     // TODO: add peer in black list.
-                    debug!("fetch fail, {}", e);
+                    error!("fetch fail, {}", e);
                 }
             }
         });
