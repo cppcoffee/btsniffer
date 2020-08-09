@@ -72,6 +72,7 @@ impl MetaWire {
         })
         .await
         .map_err(|e| Error::Connect(*peer, e))?;
+
         self.stream = Some(stream);
         Ok(())
     }
