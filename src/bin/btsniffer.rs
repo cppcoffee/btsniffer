@@ -2,7 +2,7 @@ use btsniffer::{MetaWire, Result, DHT};
 
 use async_std::task;
 use clap::{App, Arg};
-use log::{error, info};
+use log::{debug, error, info};
 
 async fn run_server(addr: &str, port: &str, friends: usize, timeout: u64) -> Result<()> {
     let mut dht = DHT::new(addr, port, friends);
@@ -22,7 +22,7 @@ async fn run_server(addr: &str, port: &str, friends: usize, timeout: u64) -> Res
                 }
                 Err(e) => {
                     // TODO: add peer in black list.
-                    error!("fetch fail, {}", e);
+                    debug!("fetch fail, {}", e);
                 }
             }
         });
