@@ -228,7 +228,11 @@ impl MetaWire {
 
     async fn socket_read_exact(&self, buf: &mut [u8]) -> Result<()> {
         let mut stream = self.stream.as_ref().ok_or(Error::InvalidTcpStream)?;
-        Ok(stream.read_exact(buf).await?)
+        io::timeout(Duration::from_secs(15), async {
+            stream.read_exact(buf).await
+        })
+        .await?;
+        Ok(())
     }
 
     fn check_pieces_done(&self) -> bool {

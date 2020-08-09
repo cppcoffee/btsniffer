@@ -2,7 +2,7 @@ use btsniffer::{MetaWire, Result, DHT};
 
 use async_std::task;
 use clap::{App, Arg};
-use log::{debug, error, info};
+use log::{error, info};
 
 async fn run_server(addr: &str, port: &str, friends: usize) -> Result<()> {
     let mut dht = DHT::new(addr, port, friends);
