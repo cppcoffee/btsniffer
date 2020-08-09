@@ -5,6 +5,9 @@ pub mod util;
 pub mod message;
 pub use message::Message;
 
+pub mod metawire;
+pub use metawire::MetaWire;
+
 pub mod rate;
 pub use rate::Rate;
 

@@ -1,8 +1,8 @@
-use btsniffer::{Result, DHT};
+use btsniffer::{MetaWire, Result, DHT};
 
 use async_std::task;
 use clap::{App, Arg};
-use log::{error, info};
+use log::{debug, error, info};
 
 async fn run_server(addr: &str, port: &str, friends: usize) -> Result<()> {
     let mut dht = DHT::new(addr, port, friends);
@@ -10,7 +10,22 @@ async fn run_server(addr: &str, port: &str, friends: usize) -> Result<()> {
 
     loop {
         let msg = rx.recv().await?;
-        println!("{:?}", msg);
+
+        // TODO: limit spawn count.
+        task::spawn(async {
+            let mut wire = MetaWire::new(msg);
+            match wire.fetch().await {
+                Ok(meta) => {
+                    // TODO: save torrent file.
+                    // TODO: output torrent info.
+                    println!("{:?}", meta);
+                }
+                Err(e) => {
+                    // TODO: add peer in black list.
+                    debug!("fetch fail, {}", e);
+                }
+            }
+        });
     }
 }
 
