@@ -29,16 +29,18 @@ pub struct DHT {
     local_id: Arc<Vec<u8>>,
     secret: Arc<Vec<u8>>,
     limiter: Arc<Mutex<Rate>>,
+    peers: usize,
 }
 
 impl DHT {
-    pub fn new(addr: &str, port: &str, limit: usize) -> Self {
+    pub fn new(addr: &str, port: &str, limit: usize, peers: usize) -> Self {
         Self {
             laddr: Arc::new(format!("{}:{}", addr, port)),
             socket: Arc::new(None),
             local_id: Arc::new(rand_infohash_key()),
             secret: Arc::new(rand_infohash_key()),
             limiter: Arc::new(Mutex::new(Rate::new(limit))),
+            peers,
         }
     }
 
@@ -48,7 +50,7 @@ impl DHT {
         let sock = UdpSocket::bind(self.laddr.as_ref()).await?;
         self.socket = Arc::new(Some(sock));
 
-        let (tx, rx) = channel(2);
+        let (tx, rx) = channel(self.peers);
 
         self.start_message_handler(tx);
         self.start_join();
