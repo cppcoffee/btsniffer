@@ -17,7 +17,6 @@ async fn run_server(
     loop {
         let msg = rx.recv().await?;
 
-        // TODO: limit spawn count.
         task::spawn(async move {
             let mut wire = MetaWire::new(msg, timeout);
             match wire.fetch().await {
@@ -83,7 +82,7 @@ fn main() {
     let port = matches.value_of("port").unwrap_or("6881");
     let friends = matches.value_of("friends").unwrap_or("500");
     let timeout = matches.value_of("timeout").unwrap_or("15");
-    let peers = matches.value_of("peers").unwrap_or("2000");
+    let peers = matches.value_of("peers").unwrap_or("400");
 
     let friends = friends.parse().unwrap();
     let timeout = timeout.parse().unwrap();

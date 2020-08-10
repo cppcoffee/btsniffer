@@ -237,8 +237,12 @@ impl DHT {
             return Err(Error::Other("announce peers invalid token".to_string()));
         }
 
-        let ac = self.summarize(v, addr)?;
-        tx.send(ac).await;
+        if tx.is_full() {
+            info!("channel is full, skip.");
+        } else {
+            let ac = self.summarize(v, addr)?;
+            tx.send(ac).await;
+        }
 
         Ok(())
     }
