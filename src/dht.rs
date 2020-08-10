@@ -97,8 +97,9 @@ impl DHT {
 
     async fn recv_message(&mut self, tx: &Sender<Message>) -> Result<()> {
         let mut buf = [0; BUFFER_SIZE_MAX];
-
-        let socket = (*self.socket).as_ref().ok_or(Error::InvalidUdpSocket)?;
+        let socket = (*self.socket)
+            .as_ref()
+            .ok_or(Error::Other("invalid udp socket".to_string()))?;
         let (n, from) = socket.recv_from(&mut buf).await?;
 
         debug!("recv message {} bytes, from {}", n, from);
@@ -114,7 +115,7 @@ impl DHT {
             "q" => self.on_query(&c, &from, tx).await,
             "r" => self.on_reply(&c, &from).await,
             "e" => self.on_error(&c, &from),
-            _ => Err(Error::InvalidPacket),
+            _ => Err(Error::Other("skip other request packet".to_string())),
         }
     }
 
@@ -126,7 +127,7 @@ impl DHT {
 
         let a = e.list()?;
         if a.len() != 2 {
-            return Err(Error::InvalidPacket);
+            return Err(Error::Other("invalid dht error list field".to_string()));
         }
 
         // decode error describe.
@@ -140,12 +141,14 @@ impl DHT {
 
     async fn on_query(&self, v: &Value, addr: &SocketAddr, tx: &Sender<Message>) -> Result<()> {
         // do check. is exist of the "t" field?
-        v.dict()?.get(b"t".as_ref()).ok_or(Error::InvalidPacket)?;
+        v.dict()?
+            .get(b"t".as_ref())
+            .ok_or(Error::Other("query not found 't' field".to_string()))?;
 
         let q = v
             .dict()?
             .get(b"q".as_ref())
-            .ok_or(Error::InvalidPacket)?
+            .ok_or(Error::Other("query not found 'q' field".to_string()))?
             .string()?;
 
         match q {
@@ -231,7 +234,7 @@ impl DHT {
             .bytes()?;
 
         if !self.is_valid_token(token, addr) {
-            return Err(Error::InvalidToken);
+            return Err(Error::Other("announce peers invalid token".to_string()));
         }
 
         let ac = self.summarize(v, addr)?;

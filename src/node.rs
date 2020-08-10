@@ -6,7 +6,10 @@ const NODE_BYTES_LENGTH: usize = 26;
 // decode nodes from bytes.
 pub fn decode_nodes(s: &[u8]) -> Result<Vec<Node>> {
     if s.len() % NODE_BYTES_LENGTH != 0 {
-        return Err(Error::InvalidNodesLength(s.len()));
+        return Err(Error::Other(format!(
+            "invalid replay 'nodes' length={}",
+            s.len()
+        )));
     }
 
     let n = s.len() / NODE_BYTES_LENGTH;

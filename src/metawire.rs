@@ -61,7 +61,7 @@ impl MetaWire {
             if self.message.infohash == digest {
                 return Ok(res);
             } else {
-                return Err(Error::MetadataChecksum);
+                return Err(Error::Other("metadata checksum mismatch".to_string()));
             }
         }
     }
@@ -73,7 +73,7 @@ impl MetaWire {
             Ok(res)
         })
         .await
-        .map_err(|e| Error::Connect(*peer, e))?;
+        .map_err(|e| Error::Other(format!("connect {} fail, {}", peer, e)))?;
 
         self.stream = Some(stream);
         Ok(())
@@ -93,15 +93,21 @@ impl MetaWire {
         self.socket_read_exact(&mut buf).await?;
 
         if buf[..20] != PROTOCOL_HEADER[..20] {
-            return Err(Error::PeerNotSupportBittorrentProtocol);
+            return Err(Error::Other(
+                "remote peer not supporting bittorrent protocol".to_string(),
+            ));
         }
 
         if buf[25] & 0x10 != 0x10 {
-            return Err(Error::PeerNotSupportExtensionProtocol);
+            return Err(Error::Other(
+                "remote peer not supporting extension protocol".to_string(),
+            ));
         }
 
         if &buf[28..48] != self.message.infohash.as_slice() {
-            return Err(Error::InvalidBittorrentHeaderResponse);
+            return Err(Error::Other(
+                "invalid bittorrent extension header response".to_string(),
+            ));
         }
 
         Ok(())
@@ -152,11 +158,11 @@ impl MetaWire {
             .integer()?;
 
         if metadata_size > MAX_METADATA_SIZE {
-            return Err(Error::MetadataSizeTooLong);
+            return Err(Error::Other("metadata size too long".to_string()));
         }
 
         if metadata_size < 0 {
-            return Err(Error::NegativeMetadataSize);
+            return Err(Error::Other("negative metadata size".to_string()));
         }
 
         let m = dict
@@ -200,7 +206,7 @@ impl MetaWire {
         let trailer_index = payload
             .windows(2)
             .position(|x| x == b"ee".as_ref())
-            .ok_or(Error::IndexNotFound)?
+            .ok_or(Error::Other("piece index not found".to_string()))?
             + 2;
 
         let m = bencode::from_bytes(&payload[..trailer_index])?;
@@ -217,23 +223,32 @@ impl MetaWire {
             .integer()?;
 
         if msg_type != 1 {
-            return Err(Error::InvalidPiece);
+            return Err(Error::Other(
+                "piece msg_type != 1, invalid piece".to_string(),
+            ));
         }
 
         Ok((payload[trailer_index..].to_vec(), piece_index as usize))
     }
 
     async fn socket_write(&self, data: &[u8]) -> Result<usize> {
-        let mut stream = self.stream.as_ref().ok_or(Error::InvalidTcpStream)?;
+        let mut stream = self
+            .stream
+            .as_ref()
+            .ok_or(Error::Other("invalid tcp socket".to_string()))?;
         Ok(stream.write(&data).await?)
     }
 
     async fn socket_read_exact(&self, buf: &mut [u8]) -> Result<()> {
-        let mut stream = self.stream.as_ref().ok_or(Error::InvalidTcpStream)?;
+        let mut stream = self
+            .stream
+            .as_ref()
+            .ok_or(Error::Other("invalid tcp socket".to_string()))?;
         io::timeout(Duration::from_secs(self.timeout), async {
             stream.read_exact(buf).await
         })
-        .await?;
+        .await
+        .map_err(|e| Error::Other(format!("read {} fail, {}", self.message.peer, e)))?;
         Ok(())
     }
 
