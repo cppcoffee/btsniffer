@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 
 // announcement message.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Message {
     pub peer: SocketAddr,
     pub infohash: Vec<u8>,

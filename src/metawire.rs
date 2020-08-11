@@ -29,9 +29,9 @@ pub struct MetaWire {
 }
 
 impl MetaWire {
-    pub fn new(msg: Message, timeout: u64) -> Self {
+    pub fn new(msg: &Message, timeout: u64) -> Self {
         Self {
-            message: msg,
+            message: msg.clone(),
             peer_id: rand_infohash_key(),
             stream: None,
             pieces: Vec::new(),

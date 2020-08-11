@@ -1,4 +1,4 @@
-use btsniffer::{MetaWire, Result, DHT};
+use btsniffer::{BlackList, MetaWire, Result, DHT};
 
 use async_std::task;
 use clap::{App, Arg};
@@ -10,15 +10,22 @@ async fn run_server(
     friends: usize,
     peers: usize,
     timeout: u64,
+    blsize: usize,
 ) -> Result<()> {
+    let blacklist = BlackList::new(blsize);
     let mut dht = DHT::new(addr, port, friends, peers);
     let rx = dht.run().await?;
 
     loop {
         let msg = rx.recv().await?;
 
+        if blacklist.contains(&msg.peer) {
+            continue;
+        }
+
+        let mut blist_clone = blacklist.clone();
         task::spawn(async move {
-            let mut wire = MetaWire::new(msg, timeout);
+            let mut wire = MetaWire::new(&msg, timeout);
             match wire.fetch().await {
                 Ok(meta) => {
                     // TODO: save torrent file.
@@ -26,8 +33,8 @@ async fn run_server(
                     println!("{:?}", meta);
                 }
                 Err(e) => {
-                    // TODO: add peer in black list.
-                    debug!("fetch fail, {}", e);
+                    debug!("fetch fail, {}, {} add black list.", e, msg.peer);
+                    blist_clone.insert(msg.peer);
                 }
             }
         });
@@ -75,6 +82,13 @@ fn main() {
                 .help("max peers to connect to download torrents")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("blacklist")
+                .short("b")
+                .long("blacklist")
+                .help("max blacklist size for downloading torrents")
+                .takes_value(true),
+        )
         .get_matches();
 
     // parse args.
@@ -83,14 +97,16 @@ fn main() {
     let friends = matches.value_of("friends").unwrap_or("500");
     let timeout = matches.value_of("timeout").unwrap_or("15");
     let peers = matches.value_of("peers").unwrap_or("400");
+    let blacklist = matches.value_of("blacklist").unwrap_or("50000");
 
     let friends = friends.parse().unwrap();
     let timeout = timeout.parse().unwrap();
     let peers = peers.parse().unwrap();
+    let blsize = blacklist.parse().unwrap();
 
     info!("btsnfifer start.");
     task::block_on(async {
-        if let Err(e) = run_server(addr, port, friends, peers, timeout).await {
+        if let Err(e) = run_server(addr, port, friends, peers, timeout, blsize).await {
             error!("server failed: {}.", e);
             std::process::exit(1);
         }

@@ -14,3 +14,4 @@ rand = "0.7"
 clap = "2"
 sha1 = "0.6"
 async-std = { version = "1.6", features = ["unstable"] }
+lru-cache = "0.1"
