@@ -244,11 +244,14 @@ impl MetaWire {
             .stream
             .as_ref()
             .ok_or(Error::Other("invalid tcp socket".to_string()))?;
+
+        let peer = &self.message.peer;
         io::timeout(Duration::from_secs(self.timeout), async {
             stream.read_exact(buf).await
         })
         .await
-        .map_err(|e| Error::Other(format!("read {} fail, {}", self.message.peer, e)))?;
+        .map_err(|e| Error::Other(format!("read {} {} bytes fail, {}", peer, buf.len(), e)))?;
+
         Ok(())
     }
 
