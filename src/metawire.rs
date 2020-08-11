@@ -15,8 +15,10 @@ const PER_BLOCK: i64 = 16384;
 const MAX_METADATA_SIZE: i64 = PER_BLOCK * 1024;
 
 const PROTOCOL_HEADER: &[u8] = &[
-    0x13, b'B', b'i', b't', b'T', b'o', b'r', b'r', b'e', b'n', b't', b' ', b'p', b'r', b'o', b't',
-    b'o', b'c', b'o', b'l', 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x01,
+    0x13, // Protocol Name Length.
+    b'B', b'i', b't', b'T', b'o', b'r', b'r', b'e', b'n', b't', b' ', b'p', b'r', b'o', b't', b'o',
+    b'c', b'o', b'l', // Name.
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x01, // Reserved Extension Bytes.
 ];
 
 // meta fetch
@@ -92,6 +94,7 @@ impl MetaWire {
         let mut buf = [0; 68];
         self.socket_read_exact(&mut buf).await?;
 
+        // verify Protocol Name
         if buf[..20] != PROTOCOL_HEADER[..20] {
             return Err(Error::Other(
                 "remote peer not supporting bittorrent protocol".to_string(),
@@ -250,7 +253,7 @@ impl MetaWire {
             stream.read_exact(buf).await
         })
         .await
-        .map_err(|e| Error::Other(format!("read {} {} bytes fail, {}", peer, buf.len(), e)))?;
+        .map_err(|e| Error::Other(format!("{} read {} bytes fail, {}", peer, buf.len(), e)))?;
 
         Ok(())
     }
