@@ -27,17 +27,17 @@ pub struct MetaWire {
     peer_id: Vec<u8>,
     stream: Option<TcpStream>,
     pieces: Vec<Option<Vec<u8>>>,
-    timeout: u64,
+    timeout: Duration,
 }
 
 impl MetaWire {
-    pub fn new(msg: &Message, timeout: u64) -> Self {
+    pub fn new(msg: &Message, t: u64) -> Self {
         Self {
             message: msg.clone(),
             peer_id: rand_infohash_key(),
             stream: None,
             pieces: Vec::new(),
-            timeout,
+            timeout: Duration::from_secs(t),
         }
     }
 
@@ -70,7 +70,7 @@ impl MetaWire {
 
     async fn connect(&mut self) -> Result<()> {
         let peer = &self.message.peer;
-        let stream = io::timeout(Duration::from_secs(self.timeout), async {
+        let stream = io::timeout(self.timeout, async {
             let res = TcpStream::connect(peer).await?;
             Ok(res)
         })
@@ -83,16 +83,21 @@ impl MetaWire {
 
     async fn handshake(&self) -> Result<usize> {
         let mut buf = Vec::new();
-        buf.write(&PROTOCOL_HEADER).await?;
-        buf.write(&self.message.infohash).await?;
-        buf.write(&self.peer_id).await?;
+        buf.extend_from_slice(&PROTOCOL_HEADER);
+        buf.extend_from_slice(&self.message.infohash);
+        buf.extend_from_slice(&self.peer_id);
 
-        Ok(self.socket_write(&buf).await?)
+        Ok(self
+            .stream
+            .as_ref()
+            .ok_or(Error::Other("invalid tcp socket".to_string()))?
+            .write(&buf)
+            .await?)
     }
 
     async fn on_handshake(&self) -> Result<()> {
         let mut buf = [0; 68];
-        self.socket_read_exact(&mut buf).await?;
+        self.read_exact(&mut buf).await?;
 
         // verify Protocol Name
         if buf[..20] != PROTOCOL_HEADER[..20] {
@@ -124,19 +129,18 @@ impl MetaWire {
         let data = bencode::to_bytes(&Value::from(m))?;
 
         let mut buf = Vec::new();
-        buf.write(&[EXTENDED, EXTHANDSHAKE]).await?;
-        buf.write(&data).await?;
-
-        Ok(self.socket_write(&buf).await?)
+        buf.extend_from_slice(&[EXTENDED, EXTHANDSHAKE]);
+        buf.extend_from_slice(&data);
+        Ok(self.write(&buf).await?)
     }
 
     async fn next(&self) -> Result<Vec<u8>> {
         let mut data = [0; 4];
-        self.socket_read_exact(&mut data).await?;
+        self.read_exact(&mut data).await?;
 
         let n = u32::from_be_bytes(data) as usize;
         let mut res = vec![0; n];
-        self.socket_read_exact(&mut res).await?;
+        self.read_exact(&mut res).await?;
 
         Ok(res)
     }
@@ -185,13 +189,13 @@ impl MetaWire {
 
         self.pieces = vec![None; num_pieces as usize];
         for i in 0..num_pieces {
-            self.request_piece(i, ut_metadata as u8).await?;
+            self.request_piece(i, ut_metadata).await?;
         }
 
         Ok(())
     }
 
-    async fn request_piece(&self, index: i64, ut_metadata: u8) -> Result<usize> {
+    async fn request_piece(&self, index: i64, ut_metadata: i64) -> Result<usize> {
         let m = bencode::map!(
             b"msg_type".to_vec() => Value::from(0),
             b"piece".to_vec() => Value::from(index)
@@ -199,10 +203,10 @@ impl MetaWire {
         let data = bencode::to_bytes(&Value::from(m))?;
 
         let mut buf = Vec::new();
-        buf.write(&[EXTENDED, ut_metadata]).await?;
-        buf.write(&data).await?;
+        buf.extend_from_slice(&[EXTENDED, ut_metadata as u8]);
+        buf.extend_from_slice(&data);
 
-        Ok(self.socket_write(&buf).await?)
+        Ok(self.write(&buf).await?)
     }
 
     async fn on_piece(&self, payload: &[u8]) -> Result<(Vec<u8>, usize)> {
@@ -234,26 +238,29 @@ impl MetaWire {
         Ok((payload[trailer_index..].to_vec(), piece_index as usize))
     }
 
-    async fn socket_write(&self, data: &[u8]) -> Result<usize> {
-        let mut stream = self
+    async fn write(&self, data: &[u8]) -> Result<usize> {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&(data.len() as u32).to_be_bytes());
+        buf.extend_from_slice(data);
+
+        Ok(self
             .stream
             .as_ref()
-            .ok_or(Error::Other("invalid tcp socket".to_string()))?;
-        Ok(stream.write(&data).await?)
+            .ok_or(Error::Other("invalid tcp socket".to_string()))?
+            .write(&buf)
+            .await?)
     }
 
-    async fn socket_read_exact(&self, buf: &mut [u8]) -> Result<()> {
+    async fn read_exact(&self, buf: &mut [u8]) -> Result<()> {
         let mut stream = self
             .stream
             .as_ref()
             .ok_or(Error::Other("invalid tcp socket".to_string()))?;
 
         let peer = &self.message.peer;
-        io::timeout(Duration::from_secs(self.timeout), async {
-            stream.read_exact(buf).await
-        })
-        .await
-        .map_err(|e| Error::Other(format!("{} read {} bytes fail, {}", peer, buf.len(), e)))?;
+        io::timeout(self.timeout, async { stream.read_exact(buf).await })
+            .await
+            .map_err(|e| Error::Other(format!("{} read {} bytes fail, {}", peer, buf.len(), e)))?;
 
         Ok(())
     }
