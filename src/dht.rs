@@ -40,7 +40,7 @@ impl DHT {
             local_id: Arc::new(rand_infohash_key()),
             secret: Arc::new(rand_infohash_key()),
             limiter: Arc::new(Mutex::new(Rate::new(limit))),
-            peers,
+            peers: peers,
         }
     }
 
