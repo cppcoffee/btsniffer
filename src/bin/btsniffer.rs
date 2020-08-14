@@ -1,6 +1,8 @@
-use btsniffer::{BlackList, MetaWire, Result, DHT};
+use btsniffer::bencode::{self, Value};
+use btsniffer::{BlackList, Error, MetaWire, Result, DHT};
 
-use async_std::task;
+use async_std::path::{Path, PathBuf};
+use async_std::{fs, task};
 use log::{debug, error, info};
 use structopt::StructOpt;
 
@@ -48,6 +50,13 @@ struct Opt {
         default_value = "5000"
     )]
     blsize: usize,
+    #[structopt(
+        short = "d",
+        long = "dir",
+        help = "the directory to store the torrents",
+        default_value = "./torrents/"
+    )]
+    dir: PathBuf,
 }
 
 async fn run_server(opt: Opt) -> Result<()> {
@@ -58,7 +67,14 @@ async fn run_server(opt: Opt) -> Result<()> {
     loop {
         let msg = rx.recv().await?;
 
+        let path = join_torrent_path(&opt.dir, &msg.infohash).await;
+        if path.exists().await {
+            debug!("torrent {:?} exist, skip.", path);
+            continue;
+        }
+
         if blacklist.contains(&msg.peer) {
+            debug!("peer {} in the blacklist, skip.", msg.peer);
             continue;
         }
 
@@ -68,9 +84,12 @@ async fn run_server(opt: Opt) -> Result<()> {
             let mut wire = MetaWire::new(&msg, timeout);
             match wire.fetch().await {
                 Ok(meta) => {
-                    // TODO: save torrent file.
+                    let _ = store_torrent(&path, &meta)
+                        .await
+                        .map_err(|e| debug!("store_torrent failed, {}", e));
+
                     // TODO: output torrent info.
-                    println!("{:?}", meta);
+                    println!("{:?}", path);
                 }
                 Err(e) => {
                     debug!("fetch fail, {}, {} add black list.", e, msg.peer);
@@ -79,6 +98,26 @@ async fn run_server(opt: Opt) -> Result<()> {
             }
         });
     }
+}
+
+async fn join_torrent_path(dir: &PathBuf, infohash: &[u8]) -> PathBuf {
+    let name: String = infohash.iter().map(|x| format!("{:x}", x)).collect();
+    dir.join(&name[..2])
+        .join(&name[2..4])
+        .join(name + ".torrent")
+}
+
+async fn store_torrent(path: &Path, meta: &[u8]) -> Result<()> {
+    let parent = path
+        .parent()
+        .ok_or(Error::Other(format!("path({:?}).parent fail", path)))?;
+    fs::create_dir_all(parent).await?;
+
+    let m = bencode::from_bytes(meta)?;
+    let d = Value::from(bencode::map!(b"info".to_vec() => m));
+    let data = bencode::to_bytes(&d)?;
+
+    Ok(fs::write(path, data).await?)
 }
 
 fn main() {
