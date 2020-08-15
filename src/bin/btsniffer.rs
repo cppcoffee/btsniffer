@@ -78,8 +78,10 @@ async fn run_server(opt: Opt) -> Result<()> {
             continue;
         }
 
+        let infohash_hex = msg.infohash_hex();
         let timeout = opt.timeout;
         let mut blist_clone = blacklist.clone();
+
         task::spawn(async move {
             let mut wire = MetaWire::new(&msg, timeout);
             match wire.fetch().await {
@@ -88,11 +90,10 @@ async fn run_server(opt: Opt) -> Result<()> {
                         .await
                         .map_err(|e| debug!("store_torrent failed, {}", e));
 
-                    let _ = torrent::from_bytes(&meta)
-                        .map_err(|e| {
-                            debug!("parse torrent failed, {}", e);
-                        })
-                        .map(|t| println!("{:?}", t));
+                    match torrent::from_bytes(infohash_hex, &meta) {
+                        Ok(t) => println!("{}", serde_json::to_string(&t).unwrap()),
+                        Err(e) => debug!("parse torrent failed, {}", e),
+                    }
                 }
                 Err(e) => {
                     debug!("fetch fail, {}, {} add black list.", e, msg.peer);

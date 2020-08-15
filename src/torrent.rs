@@ -1,14 +1,17 @@
 use crate::{bencode, Error, Result};
+use serde::{Deserialize, Serialize};
+
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TorFile {
     pub name: String,
     pub length: i64,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Torrent {
+    pub link: String,
     pub name: String,
     pub length: i64,
     pub files: Vec<TorFile>,
@@ -53,7 +56,7 @@ fn extract_files(value: &bencode::Value) -> Result<TorFile> {
 }
 
 // parse meta into Torrent instance.
-pub fn from_bytes(meta: &[u8]) -> Result<Torrent> {
+pub fn from_bytes(infohash_hex: String, meta: &[u8]) -> Result<Torrent> {
     let name: String;
     let mut length = 0_i64;
 
@@ -87,6 +90,7 @@ pub fn from_bytes(meta: &[u8]) -> Result<Torrent> {
     }
 
     Ok(Torrent {
+        link: format!("magnet:?xt=urn:btih:{}", infohash_hex),
         name,
         length,
         files,
