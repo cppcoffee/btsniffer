@@ -14,4 +14,8 @@ impl Message {
             infohash: hash.to_vec(),
         }
     }
+
+    pub fn infohash_hex(&self) -> String {
+        self.infohash.iter().map(|x| format!("{:x}", x)).collect()
+    }
 }

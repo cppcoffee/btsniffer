@@ -67,7 +67,7 @@ async fn run_server(opt: Opt) -> Result<()> {
     loop {
         let msg = rx.recv().await?;
 
-        let path = join_torrent_path(&opt.dir, &msg.infohash).await;
+        let path = join_torrent_path(&opt.dir, msg.infohash_hex()).await;
         if path.exists().await {
             debug!("torrent {:?} exist, skip.", path);
             continue;
@@ -100,11 +100,10 @@ async fn run_server(opt: Opt) -> Result<()> {
     }
 }
 
-async fn join_torrent_path(dir: &PathBuf, infohash: &[u8]) -> PathBuf {
-    let name: String = infohash.iter().map(|x| format!("{:x}", x)).collect();
-    dir.join(&name[..2])
-        .join(&name[2..4])
-        .join(name + ".torrent")
+async fn join_torrent_path(dir: &PathBuf, infohash_hex: String) -> PathBuf {
+    dir.join(&infohash_hex[..2])
+        .join(&infohash_hex[2..4])
+        .join(infohash_hex + ".torrent")
 }
 
 async fn store_torrent(path: &Path, meta: &[u8]) -> Result<()> {
