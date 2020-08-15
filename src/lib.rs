@@ -1,5 +1,6 @@
 pub mod bencode;
 pub mod node;
+pub mod torrent;
 pub mod util;
 
 pub mod message;

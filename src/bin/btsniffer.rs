@@ -1,5 +1,5 @@
 use btsniffer::bencode::{self, Value};
-use btsniffer::{BlackList, Error, MetaWire, Result, DHT};
+use btsniffer::{torrent, BlackList, Error, MetaWire, Result, DHT};
 
 use async_std::path::{Path, PathBuf};
 use async_std::{fs, task};
@@ -88,8 +88,11 @@ async fn run_server(opt: Opt) -> Result<()> {
                         .await
                         .map_err(|e| debug!("store_torrent failed, {}", e));
 
-                    // TODO: output torrent info.
-                    println!("{:?}", path);
+                    let _ = torrent::from_bytes(&meta)
+                        .map_err(|e| {
+                            debug!("parse torrent failed, {}", e);
+                        })
+                        .map(|t| println!("{:?}", t));
                 }
                 Err(e) => {
                     debug!("fetch fail, {}, {} add black list.", e, msg.peer);
