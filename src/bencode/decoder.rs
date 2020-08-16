@@ -48,7 +48,7 @@ impl<'a> Decoder<'a> {
 
         let s = str::from_utf8(&buf[..buf.len() - 1])?;
         if s.starts_with("-0") || (s.len() > 1 && s.starts_with("0")) {
-            return Err(Error::InvalidInteger(s.to_owned()));
+            return Err(Error::Other(format!("invalid integer '{}'", s)));
         }
 
         Ok(Value::Integer(s.parse::<i64>()?))
@@ -69,7 +69,7 @@ impl<'a> Decoder<'a> {
                 }
                 Some(_) => res.push(self.read_value()?),
                 None => {
-                    return Err(Error::Eof);
+                    return Err(Error::Other("eof stream".to_string()));
                 }
             }
         }
@@ -112,7 +112,7 @@ impl<'a> Decoder<'a> {
             Some(b'l') => self.read_list(),
             Some(b'd') => self.read_dict(),
             Some(_) => self.read_byte_string(),
-            None => Err(Error::Eof),
+            None => Err(Error::Other("eof stream".to_string())),
         }
     }
 }

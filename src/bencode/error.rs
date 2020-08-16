@@ -14,18 +14,8 @@ pub enum Error {
     Utf8(#[from] Utf8Error),
     #[error("FromUtf8Error {0}")]
     FromUtf8(#[from] FromUtf8Error),
-    #[error("Invalid integer {0}")]
-    InvalidInteger(String),
-    #[error("End of stream")]
-    Eof,
-    #[error("Not ByteString type")]
-    NotByteStringType,
-    #[error("Not Dict type")]
-    NotDictType,
-    #[error("Not List type")]
-    NotListType,
-    #[error("Not Integer type")]
-    NotIntegerType,
+    #[error("{0}")]
+    Other(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

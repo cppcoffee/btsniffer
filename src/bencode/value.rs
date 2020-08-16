@@ -13,35 +13,35 @@ impl Value {
     pub fn bytes(&self) -> Result<&[u8]> {
         match self {
             Value::ByteString(x) => Ok(&x),
-            _ => Err(Error::NotByteStringType),
+            _ => Err(Error::Other("value not byte string type".to_string())),
         }
     }
 
     pub fn string(&self) -> Result<&str> {
         match self {
             Value::ByteString(x) => Ok(unsafe { std::str::from_utf8_unchecked(x) }),
-            _ => Err(Error::NotByteStringType),
+            _ => Err(Error::Other("value not byte string type".to_string())),
         }
     }
 
     pub fn dict(&self) -> Result<&HashMap<Vec<u8>, Value>> {
         match self {
             Value::Dict(ref m) => Ok(m),
-            _ => Err(Error::NotDictType),
+            _ => Err(Error::Other("value not dict type".to_string())),
         }
     }
 
     pub fn list(&self) -> Result<&Vec<Value>> {
         match self {
             Value::List(ref x) => Ok(x),
-            _ => Err(Error::NotListType),
+            _ => Err(Error::Other("value not list type".to_string())),
         }
     }
 
     pub fn integer(&self) -> Result<i64> {
         match self {
             Value::Integer(n) => Ok(*n),
-            _ => Err(Error::NotIntegerType),
+            _ => Err(Error::Other("value not integer type".to_string())),
         }
     }
 }
