@@ -10,6 +10,7 @@ description = "A sniffer of DHT"
 env_logger = "0.7"
 log = "0.4"
 thiserror = "1.0"
+anyhow = "1.0"
 rand = "0.7"
 sha1 = "0.6"
 async-std = { version = "1.6", features = ["unstable"] }

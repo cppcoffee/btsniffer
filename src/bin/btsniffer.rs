@@ -1,6 +1,7 @@
 use btsniffer::bencode::{self, Value};
-use btsniffer::{torrent, BlackList, Error, MetaWire, Result, DHT};
+use btsniffer::{torrent, BlackList, Error, MetaWire, DHT};
 
+use anyhow::Result;
 use async_std::path::{Path, PathBuf};
 use async_std::{fs, task};
 use log::{debug, error, info};

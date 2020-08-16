@@ -1,7 +1,6 @@
 use crate::bencode::Error as BencodeError;
+
 use async_std::io::Error as AsyncIoError;
-use async_std::sync::RecvError as AsyncRecvError;
-use serde_json::error::Error as SerdeJsonError;
 use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]
@@ -10,10 +9,6 @@ pub enum Error {
     AsyncIo(#[from] AsyncIoError),
     #[error(transparent)]
     Bencode(#[from] BencodeError),
-    #[error(transparent)]
-    AsyncRecv(#[from] AsyncRecvError),
-    #[error(transparent)]
-    SerdeJson(#[from] SerdeJsonError),
     #[error("bencode dict not found '{0}'")]
     DictNotFound(String),
     #[error("{0}")]
