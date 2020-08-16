@@ -68,19 +68,19 @@ async fn run_server(opt: Opt) -> Result<()> {
     loop {
         let msg = rx.recv().await?;
 
+        if blacklist.contains(&msg.peer) {
+            debug!("peer {} in the blacklist, skip.", msg.peer);
+            continue;
+        }
+
         let path = join_torrent_path(&opt.dir, msg.infohash_hex()).await;
         if path.exists().await {
             debug!("torrent {:?} exist, skip.", path);
             continue;
         }
 
-        if blacklist.contains(&msg.peer) {
-            debug!("peer {} in the blacklist, skip.", msg.peer);
-            continue;
-        }
-
-        let infohash_hex = msg.infohash_hex();
         let timeout = opt.timeout;
+        let infohash_hex = msg.infohash_hex();
         let mut blist_clone = blacklist.clone();
 
         task::spawn(async move {
@@ -105,8 +105,8 @@ async fn run_server(opt: Opt) -> Result<()> {
     }
 }
 
-async fn join_torrent_path(dir: &PathBuf, infohash_hex: String) -> PathBuf {
-    dir.join(&infohash_hex[..2])
+async fn join_torrent_path(path: &PathBuf, infohash_hex: String) -> PathBuf {
+    path.join(&infohash_hex[..2])
         .join(&infohash_hex[2..4])
         .join(infohash_hex + ".torrent")
 }
@@ -115,6 +115,7 @@ async fn store_torrent(path: &Path, meta: &[u8]) -> Result<()> {
     let parent = path
         .parent()
         .ok_or(Error::Other(format!("path({:?}).parent fail", path)))?;
+
     fs::create_dir_all(parent).await?;
 
     let m = bencode::from_bytes(meta)?;
