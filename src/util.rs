@@ -5,6 +5,8 @@ use std::ptr::copy;
 const KEY_LENGTH: usize = 20;
 // transaction id length.
 const TID_LENGTH: usize = 2;
+// neighbor id length.
+const CLOSENESS: usize = 15;
 
 // make random infohash key.
 pub fn rand_infohash_key() -> Vec<u8> {
@@ -17,7 +19,6 @@ pub fn rand_transation_id() -> Vec<u8> {
 }
 
 pub fn neighbor_id(target: &[u8], local: &[u8]) -> Vec<u8> {
-    const CLOSENESS: usize = 15;
     let mut id = vec![0; KEY_LENGTH];
     unsafe {
         copy(target.as_ptr(), id.as_mut_ptr(), CLOSENESS);
@@ -52,7 +53,20 @@ mod tests {
     }
 
     #[test]
+    fn test_rand_transation_id() {
+        let id1 = rand_transation_id();
+        assert_eq!(id1.len(), TID_LENGTH);
+        let id2 = rand_transation_id();
+        assert_eq!(id2.len(), TID_LENGTH);
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
     fn test_neighbor_id() {
-        todo!();
+        let target = rand_infohash_key();
+        let local = rand_infohash_key();
+        let res = neighbor_id(&target, &local);
+        assert_eq!(res[..CLOSENESS], target[..CLOSENESS]);
+        assert_eq!(res[CLOSENESS..], local[CLOSENESS..]);
     }
 }
