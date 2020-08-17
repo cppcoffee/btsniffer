@@ -3,7 +3,10 @@ btsniffer
 
 
 ## Introduction
-btsniffer is a use rust writed torrent sniffer. it sniffs torrents from BitTorrent network.
+btsniffer is a used rust written torrent sniffer. it sniffs torrents from BitTorrent network.
+
+![Run screenshot](assets/runlog.jpg)
+
 
 ## Usage
 
