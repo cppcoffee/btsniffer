@@ -1,4 +1,4 @@
-use crate::{bencode, Error, Result};
+use bencode::{Error, Result};
 use serde::{Deserialize, Serialize};
 
 use std::path::PathBuf;

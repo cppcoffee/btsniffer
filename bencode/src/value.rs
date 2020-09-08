@@ -1,4 +1,4 @@
-use crate::bencode::{Error, Result};
+use crate::{Error, Result};
 use std::collections::HashMap;
 
 #[derive(PartialEq, Clone, Debug)]

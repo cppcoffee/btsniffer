@@ -4,10 +4,10 @@ use std::time::Duration;
 use async_std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 use async_std::sync::{channel, Arc, Receiver, Sender};
 use async_std::task;
+use bencode::Value;
 use log::{debug, info};
 use rand::prelude::*;
 
-use crate::bencode::{self, Value};
 use crate::node::decode_nodes;
 use crate::util::{neighbor_id, rand_infohash_key, rand_transation_id};
 use crate::{Error, Message, Rate, Result};

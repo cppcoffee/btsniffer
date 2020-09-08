@@ -22,4 +22,3 @@ macro_rules! map(
         }
      };
 );
-pub use map;

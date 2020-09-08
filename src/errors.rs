@@ -1,6 +1,5 @@
-use crate::bencode::Error as BencodeError;
-
 use async_std::io::Error as AsyncIoError;
+use bencode::Error as BencodeError;
 use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]

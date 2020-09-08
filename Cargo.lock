@@ -135,6 +135,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
+name = "bencode"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -159,6 +166,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
+ "bencode",
  "env_logger",
  "log",
  "lru-cache",

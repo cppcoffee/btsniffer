@@ -3,8 +3,8 @@ use std::time::Duration;
 use async_std::io;
 use async_std::net::TcpStream;
 use async_std::prelude::*;
+use bencode::Value;
 
-use crate::bencode::{self, Value};
 use crate::util::rand_infohash_key;
 use crate::{Error, Message, Result};
 

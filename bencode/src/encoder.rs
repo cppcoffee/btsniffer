@@ -1,4 +1,5 @@
-use crate::bencode::{Result, Value};
+use crate::{Result, Value};
+
 use std::collections::HashMap;
 use std::io::Write;
 

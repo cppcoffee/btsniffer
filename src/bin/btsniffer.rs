@@ -1,9 +1,9 @@
-use btsniffer::bencode::{self, Value};
 use btsniffer::{torrent, BlackList, Error, MetaWire, DHT};
 
 use anyhow::Result;
 use async_std::path::{Path, PathBuf};
 use async_std::{fs, task};
+use bencode::Value;
 use log::{debug, error, info};
 use structopt::StructOpt;
 

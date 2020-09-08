@@ -1,4 +1,5 @@
-use crate::bencode::{Error, Result, Value};
+use crate::{Error, Result, Value};
+
 use std::collections::HashMap;
 use std::io::{BufRead, Read};
 use std::str;
