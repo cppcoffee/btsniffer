@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 // 1 second.
@@ -5,33 +7,35 @@ const SECOND: Duration = Duration::from_secs(1);
 
 #[derive(Debug)]
 pub struct Rate {
-    limit: usize,
-    num: usize,
-    last: Instant,
+    limit: AtomicUsize,
+    num: AtomicUsize,
+    last: Mutex<Instant>,
 }
 
 impl Rate {
     pub fn new(n: usize) -> Self {
         Self {
-            limit: n,
-            num: 0,
-            last: Instant::now(),
+            limit: AtomicUsize::new(n),
+            num: AtomicUsize::new(0),
+            last: Mutex::new(Instant::now()),
         }
     }
 
-    pub fn allow(&mut self) -> bool {
-        if self.num >= self.limit {
+    pub fn allow(&self) -> bool {
+        let mut last = self.last.lock().unwrap();
+
+        if self.num.load(Ordering::Relaxed) >= self.limit.load(Ordering::Relaxed) {
             let now = Instant::now();
 
-            if now.duration_since(self.last) < SECOND {
+            if now.duration_since(*last) < SECOND {
                 return false;
             }
 
-            self.num = 0;
-            self.last = now;
+            self.num.store(0, Ordering::Relaxed);
+            *last = now;
         }
 
-        self.num += 1;
+        self.num.fetch_add(1, Ordering::Relaxed);
         true
     }
 }

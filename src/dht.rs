@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use async_std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
-use async_std::sync::{channel, Arc, Mutex, Receiver, Sender};
+use async_std::sync::{channel, Arc, Receiver, Sender};
 use async_std::task;
 use log::{debug, info};
 use rand::prelude::*;
@@ -28,7 +28,7 @@ pub struct DHT {
     socket: Arc<Option<UdpSocket>>,
     local_id: Arc<Vec<u8>>,
     secret: Arc<Vec<u8>>,
-    limiter: Arc<Mutex<Rate>>,
+    limiter: Arc<Rate>,
     peers: usize,
 }
 
@@ -39,7 +39,7 @@ impl DHT {
             socket: Arc::new(None),
             local_id: Arc::new(rand_infohash_key()),
             secret: Arc::new(rand_infohash_key()),
-            limiter: Arc::new(Mutex::new(Rate::new(limit))),
+            limiter: Arc::new(Rate::new(limit)),
             peers: peers,
         }
     }
@@ -158,7 +158,7 @@ impl DHT {
         }
     }
 
-    async fn on_reply(&self, v: &Value, addr: &SocketAddr) -> Result<()> {
+    async fn on_reply(&mut self, v: &Value, addr: &SocketAddr) -> Result<()> {
         let r = v
             .dict()?
             .get(b"r".as_ref())
@@ -173,9 +173,8 @@ impl DHT {
         let nodes = decode_nodes(s)?;
         debug!("on_reply {} decode {} nodes.", addr, nodes.len());
 
-        let mut limiter = self.limiter.lock().await;
         for node in nodes {
-            if !limiter.allow() {
+            if !self.limiter.allow() {
                 continue;
             }
             self.find_node(node.addr, &node.id).await?;
