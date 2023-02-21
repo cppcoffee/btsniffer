@@ -1,3 +1,4 @@
+use crate::Message;
 use async_std::io::Error as AsyncIoError;
 use bencode::Error as BencodeError;
 use thiserror::Error as ThisError;
@@ -6,10 +7,16 @@ use thiserror::Error as ThisError;
 pub enum Error {
     #[error(transparent)]
     AsyncIo(#[from] AsyncIoError),
+
     #[error(transparent)]
     Bencode(#[from] BencodeError),
+
+    #[error("send fail, message: {0:?}")]
+    Send(Message),
+
     #[error("bencode dict not found '{0}'")]
     DictNotFound(String),
+
     #[error("{0}")]
     Other(String),
 }

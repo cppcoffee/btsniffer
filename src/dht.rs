@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
+use async_std::channel::{Receiver, Sender};
 use async_std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
-use async_std::sync::{channel, Arc, Receiver, Sender};
-use async_std::task;
+use async_std::sync::Arc;
+use async_std::{channel, task};
 use bencode::Value;
 use log::{debug, info};
 use rand::prelude::*;
@@ -50,7 +51,7 @@ impl DHT {
         let sock = UdpSocket::bind(self.laddr.as_ref()).await?;
         self.socket = Arc::new(Some(sock));
 
-        let (tx, rx) = channel(self.peers);
+        let (tx, rx) = channel::bounded(self.peers);
 
         self.start_message_handler(tx);
         self.start_join();
@@ -240,7 +241,7 @@ impl DHT {
             info!("channel is full, skip.");
         } else {
             let ac = self.summarize(v, addr)?;
-            tx.send(ac).await;
+            tx.send(ac).await.map_err(|e| Error::Send(e.into_inner()))?;
         }
 
         Ok(())
