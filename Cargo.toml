@@ -2,7 +2,7 @@
 name = "btsniffer"
 version = "0.1.0"
 authors = ["cppcoffee <cppcoffee@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "A sniffer of DHT"
 
 
